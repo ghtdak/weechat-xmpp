@@ -851,6 +851,8 @@ class Server:
 
     def add_muc(self, room, nickname):
         """ Add a new buddy """
+        if not nickname:
+            nickname = self.option_string("jid").split('@')[0]
         muc = MUC(jid=room, server=self)
         resource = "%s/%s" % (room, nickname)
         xmpp_room = xmpp.protocol.JID(resource)
@@ -1773,7 +1775,7 @@ def jabber_cmd_room(data, buffer, args):
         argv = args.split()
         room = argv[0]
         if len(argv) == 1:
-            nickname = "weechat"  #TODO add a config parameter for default nickname
+            nickname = None
         else:
             nickname = argv[1]
 
