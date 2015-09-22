@@ -19,7 +19,7 @@
 #
 
 #
-# Jabber/XMPP protocol for WeeChat.
+# Jabber/XMPP protocol for wc.
 # (this script requires WeeChat 0.3.0 (or newer) and xmpppy library)
 #
 # For help, see /help jabber
@@ -98,11 +98,11 @@ import warnings
 import_ok = True
 
 try:
-    import weechat
+    import weechat as wc
 except:
-    print("This script must be run under WeeChat.")
+    print("This script must be run under wc.")
     print("Get WeeChat now at: http://www.weechat.org/")
-    import_ok = False
+    exit(1)
 
 # On import, xmpp may produce warnings about using hashlib instead of
 # deprecated sha and md5. Since the code producing those warnings is
@@ -116,7 +116,7 @@ except:
         "Package python-xmpp (xmpppy) must be installed to use Jabber protocol.")
     print(
         "Get xmpppy with your package manager, or at this URL: http://xmpppy.sourceforge.net/")
-    import_ok = False
+    exit(1)
 finally:
     warnings.filters = original_filters
 
@@ -269,62 +269,62 @@ jabber_jid_aliases = {}  # { 'alias1': 'jid1', 'alias2': 'jid2', ... }
 def jabber_config_init():
     """ Initialize config file: create sections and options in memory. """
     global jabber_config_file, jabber_config_section
-    jabber_config_file = weechat.config_new("jabber", "jabber_config_reload_cb",
+    jabber_config_file = wc.config_new("jabber", "jabber_config_reload_cb",
                                             "")
     if not jabber_config_file:
         return
     # look
-    jabber_config_section["look"] = weechat.config_new_section(
+    jabber_config_section["look"] = wc.config_new_section(
         jabber_config_file, "look", 0, 0, "", "", "", "", "", "", "", "", "",
         "")
     if not jabber_config_section["look"]:
-        weechat.config_free(jabber_config_file)
+        wc.config_free(jabber_config_file)
         return
-    jabber_config_option["debug"] = weechat.config_new_option(
+    jabber_config_option["debug"] = wc.config_new_option(
         jabber_config_file, jabber_config_section["look"], "debug", "boolean",
         "display debug messages", "", 0, 0, "off", "off", 0, "", "", "", "", "",
         "")
     # color
-    jabber_config_section["color"] = weechat.config_new_section(
+    jabber_config_section["color"] = wc.config_new_section(
         jabber_config_file, "color", 0, 0, "", "", "", "", "", "", "", "", "",
         "")
     if not jabber_config_section["color"]:
-        weechat.config_free(jabber_config_file)
+        wc.config_free(jabber_config_file)
         return
-    jabber_config_option["message_join"] = weechat.config_new_option(
+    jabber_config_option["message_join"] = wc.config_new_option(
         jabber_config_file, jabber_config_section["color"], "message_join",
         "color", "color for text in join messages", "", 0, 0, "green", "green",
         0, "", "", "", "", "", "")
-    jabber_config_option["message_quit"] = weechat.config_new_option(
+    jabber_config_option["message_quit"] = wc.config_new_option(
         jabber_config_file, jabber_config_section["color"], "message_quit",
         "color", "color for text in quit messages", "", 0, 0, "red", "red", 0,
         "", "", "", "", "", "")
     # server
-    jabber_config_section["server"] = weechat.config_new_section(
+    jabber_config_section["server"] = wc.config_new_section(
         jabber_config_file, "server", 0, 0, "jabber_config_server_read_cb", "",
         "jabber_config_server_write_cb", "", "", "", "", "", "", "")
     if not jabber_config_section["server"]:
-        weechat.config_free(jabber_config_file)
+        wc.config_free(jabber_config_file)
         return
-    jabber_config_section["jid_aliases"] = weechat.config_new_section(
+    jabber_config_section["jid_aliases"] = wc.config_new_section(
         jabber_config_file, "jid_aliases", 0, 0,
         "jabber_config_jid_aliases_read_cb", "",
         "jabber_config_jid_aliases_write_cb", "", "", "", "", "", "", "")
     if not jabber_config_section["jid_aliases"]:
-        weechat.config_free(jabber_config_file)
+        wc.config_free(jabber_config_file)
         return
 
 
 def jabber_config_reload_cb(data, config_file):
     """ Reload config file. """
-    return weechat.config_reload(config_file)
+    return wc.config_reload(config_file)
 
 
 def jabber_config_server_read_cb(data, config_file, section, option_name,
                                  value):
     """ Read server option in config file. """
     global jabber_servers
-    rc = weechat.WEECHAT_CONFIG_OPTION_SET_ERROR
+    rc = wc.WEECHAT_CONFIG_OPTION_SET_ERROR
     items = option_name.split(".", 1)
     if len(items) == 2:
         server = jabber_search_server_by_name(items[0])
@@ -332,18 +332,18 @@ def jabber_config_server_read_cb(data, config_file, section, option_name,
             server = Server(items[0])
             jabber_servers.append(server)
         if server:
-            rc = weechat.config_option_set(server.options[items[1]], value, 1)
+            rc = wc.config_option_set(server.options[items[1]], value, 1)
     return rc
 
 
 def jabber_config_server_write_cb(data, config_file, section_name):
     """ Write server section in config file. """
     global jabber_servers
-    weechat.config_write_line(config_file, section_name, "")
+    wc.config_write_line(config_file, section_name, "")
     for server in jabber_servers:
         for name, option in sorted(server.options.items()):
-            weechat.config_write_option(config_file, option)
-    return weechat.WEECHAT_RC_OK
+            wc.config_write_option(config_file, option)
+    return wc.WEECHAT_RC_OK
 
 
 def jabber_config_jid_aliases_read_cb(data, config_file, section, option_name,
@@ -351,39 +351,40 @@ def jabber_config_jid_aliases_read_cb(data, config_file, section, option_name,
     """ Read jid_aliases option in config file. """
     global jabber_jid_aliases
     jabber_jid_aliases[option_name] = value
-    option = weechat.config_new_option(
+    option = wc.config_new_option(
         config_file, section, option_name, "string", "jid alias", "", 0, 0, "",
         value, 0, "", "", "", "", "", "")
     if not option:
-        return weechat.WEECHAT_CONFIG_OPTION_SET_ERROR
-    return weechat.WEECHAT_CONFIG_OPTION_SET_OK_CHANGED
+        return wc.WEECHAT_CONFIG_OPTION_SET_ERROR
+    return wc.WEECHAT_CONFIG_OPTION_SET_OK_CHANGED
 
 
 def jabber_config_jid_aliases_write_cb(data, config_file, section_name):
     """ Write jid_aliases section in config file. """
     global jabber_jid_aliases
-    weechat.config_write_line(config_file, section_name, "")
+    wc.config_write_line(config_file, section_name, "")
     for alias, jid in sorted(jabber_jid_aliases.items()):
-        weechat.config_write_line(config_file, alias, jid)
-    return weechat.WEECHAT_RC_OK
+        wc.config_write_line(config_file, alias, jid)
+    return wc.WEECHAT_RC_OK
 
 
 def jabber_config_read():
     """ Read jabber config file (jabber.conf). """
     global jabber_config_file
-    return weechat.config_read(jabber_config_file)
+    return wc.config_read(jabber_config_file)
 
 
 def jabber_config_write():
     """ Write jabber config file (jabber.conf). """
     global jabber_config_file
-    return weechat.config_write(jabber_config_file)
+    return wc.config_write(jabber_config_file)
 
+jabber_config_option = None
 
 def jabber_debug_enabled():
     """ Return True if debug is enabled. """
     global jabber_config_options
-    if weechat.config_boolean(jabber_config_option["debug"]):
+    if wc.config_boolean(jabber_config_option["debug"]):
         return True
     return False
 
@@ -392,42 +393,42 @@ def jabber_config_color(color):
     """ Return color code for a jabber color option. """
     global jabber_config_option
     if color in jabber_config_option:
-        return weechat.color(weechat.config_color(jabber_config_option[color]))
+        return wc.color(wc.config_color(jabber_config_option[color]))
     return ""
 
 
 def ping_timeout_check_cb(server_name, option, value):
     global jabber_config_file, jabber_config_section
-    ping_interval_option = weechat.config_search_option(
+    ping_interval_option = wc.config_search_option(
         jabber_config_file, jabber_config_section["server"],
         "%s.ping_interval" % (server_name))
-    ping_interval = weechat.config_integer(ping_interval_option)
+    ping_interval = wc.config_integer(ping_interval_option)
     if int(ping_interval) and int(value) >= int(ping_interval):
-        weechat.prnt("",
+        wc.prnt("",
                      "\njabber: unable to update 'ping_timeout' for server %s" %
                      (server_name))
-        weechat.prnt(
+        wc.prnt(
             "",
             "jabber: to prevent multiple concurrent pings, ping_interval must be greater than ping_timeout")
-        return weechat.WEECHAT_CONFIG_OPTION_SET_ERROR
-    return weechat.WEECHAT_CONFIG_OPTION_SET_OK_CHANGED
+        return wc.WEECHAT_CONFIG_OPTION_SET_ERROR
+    return wc.WEECHAT_CONFIG_OPTION_SET_OK_CHANGED
 
 
 def ping_interval_check_cb(server_name, option, value):
     global jabber_config_file, jabber_config_section
-    ping_timeout_option = weechat.config_search_option(
+    ping_timeout_option = wc.config_search_option(
         jabber_config_file, jabber_config_section["server"],
         "%s.ping_timeout" % (server_name))
-    ping_timeout = weechat.config_integer(ping_timeout_option)
+    ping_timeout = wc.config_integer(ping_timeout_option)
     if int(value) and int(ping_timeout) >= int(value):
-        weechat.prnt(
+        wc.prnt(
             "", "\njabber: unable to update 'ping_interval' for server %s" %
             (server_name))
-        weechat.prnt(
+        wc.prnt(
             "",
             "jabber: to prevent multiple concurrent pings, ping_interval must be greater than ping_timeout")
-        return weechat.WEECHAT_CONFIG_OPTION_SET_ERROR
-    return weechat.WEECHAT_CONFIG_OPTION_SET_OK_CHANGED
+        return wc.WEECHAT_CONFIG_OPTION_SET_ERROR
+    return wc.WEECHAT_CONFIG_OPTION_SET_OK_CHANGED
 
 # ================================[ servers ]=================================
 
@@ -448,7 +449,7 @@ class Server:
         values['name'] = name
         values.update(**kwargs)
         for option_name, props in jabber_server_options.items():
-            self.options[option_name] = weechat.config_new_option(
+            self.options[option_name] = wc.config_new_option(
                 jabber_config_file, jabber_config_section["server"],
                 self.name + "." + option_name, props["type"], props["desc"],
                 props["string_values"], props["min"], props["max"],
@@ -471,39 +472,39 @@ class Server:
 
     def option_string(self, option_name):
         """ Return a server option, as string. """
-        return weechat.config_string(self.options[option_name])
+        return wc.config_string(self.options[option_name])
 
     def option_boolean(self, option_name):
         """ Return a server option, as boolean. """
-        return weechat.config_boolean(self.options[option_name])
+        return wc.config_boolean(self.options[option_name])
 
     def option_integer(self, option_name):
         """ Return a server option, as string. """
-        return weechat.config_integer(self.options[option_name])
+        return wc.config_integer(self.options[option_name])
 
     def connect(self):
         """ Connect to Jabber server. """
         if not self.buffer:
             bufname = "%s.server.%s" % (SCRIPT_NAME, self.name)
-            self.buffer = weechat.buffer_search("python", bufname)
+            self.buffer = wc.buffer_search("python", bufname)
             if not self.buffer:
-                self.buffer = weechat.buffer_new(bufname,
+                self.buffer = wc.buffer_new(bufname,
                                                  "jabber_buffer_input_cb", "",
                                                  "jabber_buffer_close_cb", "")
             if self.buffer:
-                weechat.buffer_set(self.buffer, "short_name", self.name)
-                weechat.buffer_set(self.buffer, "localvar_set_type", "server")
-                weechat.buffer_set(self.buffer, "localvar_set_server",
+                wc.buffer_set(self.buffer, "short_name", self.name)
+                wc.buffer_set(self.buffer, "localvar_set_type", "server")
+                wc.buffer_set(self.buffer, "localvar_set_server",
                                    self.name)
-                weechat.buffer_set(self.buffer, "nicklist", "1")
-                weechat.buffer_set(self.buffer, "nicklist_display_groups", "1")
-                weechat.buffer_set(self.buffer, "display", "auto")
+                wc.buffer_set(self.buffer, "nicklist", "1")
+                wc.buffer_set(self.buffer, "nicklist_display_groups", "1")
+                wc.buffer_set(self.buffer, "display", "auto")
         self.disconnect()
 
         if not eval_expression(self.option_string("jid")):
-            weechat.prnt(self.buffer,
+            wc.prnt(self.buffer,
                          "%sjabber: JID must contain at least domain name" %
-                         weechat.prefix("error"))
+                         wc.prefix("error"))
             self.ping_up = False
             self.client = None
             return self.is_connected()
@@ -533,7 +534,7 @@ class Server:
             warnings.filters = original_filters
 
         if conn:
-            weechat.prnt(self.buffer, "jabber: connection ok with %s" % conn)
+            wc.prnt(self.buffer, "jabber: connection ok with %s" % conn)
             res = self.buddy.resource
             if not res:
                 res = "WeeChat"
@@ -543,7 +544,7 @@ class Server:
                 eval_expression(self.option_string("password")), res)
 
             if auth:
-                weechat.prnt(self.buffer, "jabber: authentication ok (using %s)"
+                wc.prnt(self.buffer, "jabber: authentication ok (using %s)"
                              % auth)
 
                 self.roster = self.client.getRoster()
@@ -552,28 +553,28 @@ class Server:
                 self.client.RegisterHandler("message", self.message_handler)
                 self.client.sendInitPresence(requestRoster=1)
                 self.sock = self.client.Connection._sock.fileno()
-                self.hook_fd = weechat.hook_fd(self.sock, 1, 0, 0,
+                self.hook_fd = wc.hook_fd(self.sock, 1, 0, 0,
                                                "jabber_fd_cb", "")
-                weechat.buffer_set(self.buffer, "highlight_words",
+                wc.buffer_set(self.buffer, "highlight_words",
                                    self.buddy.username)
-                weechat.buffer_set(self.buffer, "localvar_set_nick",
+                wc.buffer_set(self.buffer, "localvar_set_nick",
                                    self.buddy.username)
-                hook_away = weechat.hook_command_run(
+                hook_away = wc.hook_command_run(
                     "/away -all*", "jabber_away_command_run_cb", "")
 
                 # setting initial presence
-                priority = weechat.config_integer(self.options['priority'])
+                priority = wc.config_integer(self.options['priority'])
                 self.set_presence(show="", priority=priority)
 
                 self.ping_up = True
             else:
-                weechat.prnt(self.buffer, "%sjabber: could not authenticate" %
-                             weechat.prefix("error"))
+                wc.prnt(self.buffer, "%sjabber: could not authenticate" %
+                             wc.prefix("error"))
                 self.ping_up = False
                 self.client = None
         else:
-            weechat.prnt(self.buffer, "%sjabber: could not connect" %
-                         weechat.prefix("error"))
+            wc.prnt(self.buffer, "%sjabber: could not connect" %
+                         wc.prefix("error"))
             self.ping_up = False
             self.client = None
         return self.is_connected()
@@ -604,8 +605,8 @@ class Server:
     def print_debug_server(self, message):
         """ Print debug message on server buffer. """
         if jabber_debug_enabled():
-            weechat.prnt(self.buffer, "%sjabber: %s" %
-                         (weechat.prefix("network"), message))
+            wc.prnt(self.buffer, "%sjabber: %s" %
+                         (wc.prefix("network"), message))
 
     def print_debug_handler(self, handler_name, node):
         """ Print debug message for a handler on server buffer. """
@@ -616,8 +617,8 @@ class Server:
     def print_error(self, message):
         """ Print error message on server buffer. """
         if jabber_debug_enabled():
-            weechat.prnt(self.buffer, "%sjabber: %s" %
-                         (weechat.prefix("error"), message))
+            wc.prnt(self.buffer, "%sjabber: %s" %
+                         (wc.prefix("error"), message))
 
     def muc_presence(self, muc, conn, node):
         chan_user = muc.search_buddy_list(
@@ -674,7 +675,7 @@ class Server:
     def iq_handler(self, conn, node):
         """ Receive iq message. """
         self.print_debug_handler("iq", node)
-        #weechat.prnt(self.buffer, "jabber: iq handler")
+        #wc.prnt(self.buffer, "jabber: iq handler")
         if node.getFrom() == self.buddy.domain:
             # type='result' => pong from server
             # type='error'  => error message from server
@@ -685,7 +686,7 @@ class Server:
             if node.getType() in ['result', 'error']:
                 self.delete_ping_timeout_timer()  # Disable the timeout feature
                 self.ping_up = True
-                if not self.client.isConnected() and weechat.config_boolean(
+                if not self.client.isConnected() and wc.config_boolean(
                         self.options['autoreconnect']):
                     self.connect()
 
@@ -716,7 +717,7 @@ class Server:
         # /jchat.
         recv_object = self
         if isinstance(buddy, Buddy):
-            if not buddy.chat and weechat.config_boolean(self.options['private'
+            if not buddy.chat and wc.config_boolean(self.options['private'
                                                                      ]):
                 self.add_chat(buddy)
             if buddy.chat:
@@ -734,26 +735,26 @@ class Server:
         try:
             self.client.Process(1)
         except xmpp.protocol.StreamError as e:
-            weechat.prnt('', '%s: Error from server: %s' % (SCRIPT_NAME, e))
+            wc.prnt('', '%s: Error from server: %s' % (SCRIPT_NAME, e))
             self.disconnect()
-            if weechat.config_boolean(self.options['autoreconnect']):
+            if wc.config_boolean(self.options['autoreconnect']):
                 autoreconnect_delay = 30
-                weechat.command(
+                wc.command(
                     '', '/wait %s /%s connect %s' %
                     (autoreconnect_delay, SCRIPT_COMMAND, self.name))
 
     def recv_message(self, buddy, message):
         """ Receive a message from buddy. """
-        weechat.prnt_date_tags(
+        wc.prnt_date_tags(
             self.buffer, 0, "notify_private,nick_%s,prefix_nick_%s,log1" % (
-                buddy.alias, weechat.config_string(weechat.config_get(
-                    "weechat.color.chat_nick_other"))), "%s%s\t%s" % (
-                        weechat.color("chat_nick_other"), buddy.alias, message))
+                buddy.alias, wc.config_string(wc.config_get(
+                    "wc.color.chat_nick_other"))), "%s%s\t%s" % (
+                        wc.color("chat_nick_other"), buddy.alias, message))
 
     def print_status(self, nickname, status):
         """ Print a status in server window and in chat. """
-        weechat.prnt_date_tags(self.buffer, 0, "no_highlight",
-                               "%s%s has status %s" % (weechat.prefix("action"),
+        wc.prnt_date_tags(self.buffer, 0, "no_highlight",
+                               "%s%s has status %s" % (wc.prefix("action"),
                                                        nickname, status))
         for chat in self.chats:
             if nickname in chat.buddy.alias:
@@ -767,9 +768,9 @@ class Server:
         eg username@domain.tld/resource or a Buddy object instance.
         """
         if not self.ping_up:
-            weechat.prnt(self.buffer,
+            wc.prnt(self.buffer,
                          "%sjabber: unable to send message, connection is down"
-                         % weechat.prefix("error"))
+                         % wc.prefix("error"))
             return
         recipient = buddy
         if isinstance(buddy, Buddy):
@@ -793,15 +794,15 @@ class Server:
         # or alias. The colon can be replaced with a comma as well.
         # Split input into name and message.
         if not re.compile(r'.+[:,].+').match(input):
-            weechat.prnt(self.buffer, "%sjabber: %s" %
-                         (weechat.prefix("network"),
+            wc.prnt(self.buffer, "%sjabber: %s" %
+                         (wc.prefix("network"),
                           "Invalid send format. Use  jid: message"))
             return
         name, message = re.split('[:,]', input, maxsplit=1)
         buddy = self.search_buddy_list(name, by='alias')
         if not buddy:
-            weechat.prnt(self.buffer, "%sjabber: Invalid jid: %s" %
-                         (weechat.prefix("network"), name))
+            wc.prnt(self.buffer, "%sjabber: Invalid jid: %s" %
+                         (wc.prefix("network"), name))
             return
         # Send activity indicates user is no longer away, set it so
         if self.buddy and self.buddy.away:
@@ -811,12 +812,12 @@ class Server:
             sender = self.buddy.alias
         except:
             sender = self.jid
-        weechat.prnt_date_tags(
+        wc.prnt_date_tags(
             self.buffer, 0,
             "notify_none,no_highlight,nick_%s,prefix_nick_%s,log1" % (
-                sender, weechat.config_string(weechat.config_get(
-                    "weechat.color.chat_nick_self"))
-            ), "%s%s\t%s" % (weechat.color("chat_nick_self"), sender,
+                sender, wc.config_string(wc.config_get(
+                    "wc.color.chat_nick_self"))
+            ), "%s%s\t%s" % (wc.color("chat_nick_self"), sender,
                              message.strip()))
 
     def set_away(self, message):
@@ -828,19 +829,19 @@ class Server:
         if message:
             show = "xa"
             status = message
-            priority = weechat.config_integer(self.options['away_priority'])
+            priority = wc.config_integer(self.options['away_priority'])
             self.buddy.set_status(away=True, status=message)
         else:
             show = ""
             status = None
-            priority = weechat.config_integer(self.options['priority'])
+            priority = wc.config_integer(self.options['priority'])
             self.buddy.set_status(away=False)
         self.set_presence(show, status, priority)
 
     def set_presence(self, show=None, status=None, priority=None):
-        if not show == None: self.presence.setShow(show)
-        if not status == None: self.presence.setStatus(status)
-        if not priority == None: self.presence.setPriority(priority)
+        if not show is None: self.presence.setShow(show)
+        if not status is None: self.presence.setStatus(status)
+        if not priority is None: self.presence.setPriority(priority)
         self.client.send(self.presence)
 
     def add_buddy(self, jid=None):
@@ -864,8 +865,8 @@ class Server:
 
     def display_buddies(self):
         """ Display buddies. """
-        weechat.prnt(self.buffer, "")
-        weechat.prnt(self.buffer, "Buddies:")
+        wc.prnt(self.buffer, "")
+        wc.prnt(self.buffer, "Buddies:")
 
         len_max = {'alias': 5, 'jid': 5}
         lines = []
@@ -886,10 +887,10 @@ class Server:
                 len_max['jid'] = len(buddy_jid_string)
         prnt_format = "  %s%-" + str(len_max['jid']) + "s %-" + str(
             len_max['alias']) + "s %s"
-        weechat.prnt(self.buffer, prnt_format % ('', 'JID', 'Alias', 'Status'))
+        wc.prnt(self.buffer, prnt_format % ('', 'JID', 'Alias', 'Status'))
         for line in lines:
-            weechat.prnt(self.buffer,
-                         prnt_format % (weechat.color("chat_nick"), line['jid'],
+            wc.prnt(self.buffer,
+                         prnt_format % (wc.color("chat_nick"), line['jid'],
                                         line['alias'], line['status'],))
 
     def stringify_jid(self, jid, wresource=1):
@@ -957,9 +958,9 @@ class Server:
             return
         if not action in ['remove', 'update']:
             return
-        ptr_nick_gui = weechat.nicklist_search_nick(self.buffer, "",
+        ptr_nick_gui = wc.nicklist_search_nick(self.buffer, "",
                                                     buddy.alias)
-        weechat.nicklist_remove_nick(self.buffer, ptr_nick_gui)
+        wc.nicklist_remove_nick(self.buffer, ptr_nick_gui)
         msg = ''
         prefix = ''
         color = ''
@@ -967,8 +968,8 @@ class Server:
         if action == 'update':
             nick_color = "bar_fg"
             if buddy.away:
-                nick_color = "weechat.color.nicklist_away"
-            weechat.nicklist_add_nick(self.buffer, "", buddy.alias, nick_color,
+                nick_color = "wc.color.nicklist_away"
+            wc.nicklist_add_nick(self.buffer, "", buddy.alias, nick_color,
                                       "", "", 1)
             if not ptr_nick_gui:
                 msg = 'joined'
@@ -980,8 +981,8 @@ class Server:
             prefix = 'quit'
             color = 'message_quit'
         if msg:
-            weechat.prnt(self.buffer, "%s%s%s%s has %s %s" %
-                         (weechat.prefix(prefix), weechat.color("chat_nick"),
+            wc.prnt(self.buffer, "%s%s%s%s has %s %s" %
+                         (wc.prefix(prefix), wc.color("chat_nick"),
                           buddy.alias, jabber_config_color(color), msg, away))
         return
 
@@ -990,14 +991,14 @@ class Server:
             self.delete_ping_timer()
         if not self.option_integer('ping_interval'):
             return
-        self.ping_timer = weechat.hook_timer(
+        self.ping_timer = wc.hook_timer(
             self.option_integer('ping_interval') * 1000, 0, 0,
             "jabber_ping_timer", self.name)
         return
 
     def delete_ping_timer(self):
         if self.ping_timer:
-            weechat.unhook(self.ping_timer)
+            wc.unhook(self.ping_timer)
         self.ping_time = None
         return
 
@@ -1006,14 +1007,14 @@ class Server:
             self.delete_ping_timeout_timer()
         if not self.option_integer('ping_timeout'):
             return
-        self.ping_timeout_timer = weechat.hook_timer(
+        self.ping_timeout_timer = wc.hook_timer(
             self.option_integer('ping_timeout') * 1000, 0, 1,
             "jabber_ping_timeout_timer", self.name)
         return
 
     def delete_ping_timeout_timer(self):
         if self.ping_timeout_timer:
-            weechat.unhook(self.ping_timeout_timer)
+            wc.unhook(self.ping_timeout_timer)
         self.ping_timeout_timer = None
         return
 
@@ -1043,22 +1044,22 @@ class Server:
 
     def disconnect(self):
         """ Disconnect from Jabber server. """
-        if self.hook_fd != None:
-            weechat.unhook(self.hook_fd)
+        if self.hook_fd is not None:
+            wc.unhook(self.hook_fd)
             self.hook_fd = None
-        if self.client != None:
+        if self.client is not None:
             #if self.client.isConnected():
             #    self.client.disconnect()
             self.client = None
             self.jid = None
             self.sock = None
             self.buddy = None
-            weechat.nicklist_remove_all(self.buffer)
+            wc.nicklist_remove_all(self.buffer)
 
     def close_buffer(self):
         """ Close server buffer. """
         if self.buffer != "":
-            weechat.buffer_close(self.buffer)
+            wc.buffer_close(self.buffer)
             self.buffer = ""
 
     def delete(self, deleteOptions=False):
@@ -1071,13 +1072,13 @@ class Server:
         self.close_buffer()
         if deleteOptions:
             for name, option in self.options.items():
-                weechat.config_option_free(option)
+                wc.config_option_free(option)
 
 
 def eval_expression(option_name):
     """ Return a evaluated expression """
     if int(version) >= 0x00040200:
-        return weechat.string_eval_expression(option_name, {}, {}, {})
+        return wc.string_eval_expression(option_name, {}, {}, {})
     else:
         return option_name
 
@@ -1111,7 +1112,7 @@ def jabber_search_context_by_name(server_name):
     """Search for buffer given name of server. """
 
     bufname = "%s.server.%s" % (SCRIPT_NAME, server_name)
-    return jabber_search_context(weechat.buffer_search("python", bufname))
+    return jabber_search_context(wc.buffer_search("python", bufname))
 
 # =================================[ chats ]==================================
 
@@ -1125,75 +1126,75 @@ class Chat:
         self.buddy = buddy
         buddy.chat = self
         bufname = "%s.%s.%s" % (SCRIPT_NAME, server.name, self.buddy.alias)
-        self.buffer = weechat.buffer_search("python", bufname)
+        self.buffer = wc.buffer_search("python", bufname)
         if not self.buffer:
-            self.buffer = weechat.buffer_new(bufname, "jabber_buffer_input_cb",
+            self.buffer = wc.buffer_new(bufname, "jabber_buffer_input_cb",
                                              "", "jabber_buffer_close_cb", "")
         self.buffer_title = self.buddy.alias
         if self.buffer:
-            weechat.buffer_set(self.buffer, "title", self.buffer_title)
-            weechat.buffer_set(self.buffer, "short_name", self.buddy.alias)
-            weechat.buffer_set(self.buffer, "localvar_set_type", "private")
-            weechat.buffer_set(self.buffer, "localvar_set_server", server.name)
-            weechat.buffer_set(self.buffer, "localvar_set_channel",
+            wc.buffer_set(self.buffer, "title", self.buffer_title)
+            wc.buffer_set(self.buffer, "short_name", self.buddy.alias)
+            wc.buffer_set(self.buffer, "localvar_set_type", "private")
+            wc.buffer_set(self.buffer, "localvar_set_server", server.name)
+            wc.buffer_set(self.buffer, "localvar_set_channel",
                                self.buddy.alias)
-            weechat.hook_signal_send("logger_backlog",
-                                     weechat.WEECHAT_HOOK_SIGNAL_POINTER,
+            wc.hook_signal_send("logger_backlog",
+                                     wc.WEECHAT_HOOK_SIGNAL_POINTER,
                                      self.buffer)
             if switch_to_buffer:
-                weechat.buffer_set(self.buffer, "display", "auto")
+                wc.buffer_set(self.buffer, "display", "auto")
 
     def recv_message(self, buddy, message):
         """ Receive a message from buddy. """
         if buddy.alias != self.buffer_title:
             self.buffer_title = buddy.alias
-            weechat.buffer_set(self.buffer, "title", "%s" % self.buffer_title)
-        weechat.prnt_date_tags(
+            wc.buffer_set(self.buffer, "title", "%s" % self.buffer_title)
+        wc.prnt_date_tags(
             self.buffer, 0, "notify_private,nick_%s,prefix_nick_%s,log1" % (
-                buddy.alias, weechat.config_string(weechat.config_get(
-                    "weechat.color.chat_nick_other"))), "%s%s\t%s" % (
-                        weechat.color("chat_nick_other"), buddy.alias, message))
+                buddy.alias, wc.config_string(wc.config_get(
+                    "wc.color.chat_nick_other"))), "%s%s\t%s" % (
+                        wc.color("chat_nick_other"), buddy.alias, message))
 
     def recv_muc_message(self, buddy, nickname, message):
         """ Receive a message from MUC. """
-        ptr_nick_gui = weechat.nicklist_search_nick(self.buffer, "", nickname)
-        color = weechat.nicklist_nick_get_string(self.buffer, nickname, "color")
-        weechat.prnt_date_tags(self.buffer, 0, "notify_message",
-                               "%s%s\t%s" % (weechat.color(color), nickname,
+        ptr_nick_gui = wc.nicklist_search_nick(self.buffer, "", nickname)
+        color = wc.nicklist_nick_get_string(self.buffer, nickname, "color")
+        wc.prnt_date_tags(self.buffer, 0, "notify_message",
+                               "%s%s\t%s" % (wc.color(color), nickname,
                                              message))
 
     def send_message(self, message):
         """ Send message to buddy. """
         if not self.server.ping_up:
-            weechat.prnt(self.buffer,
+            wc.prnt(self.buffer,
                          "%sjabber: unable to send message, connection is down"
-                         % weechat.prefix("error"))
+                         % wc.prefix("error"))
             return
         self.server.send_message(self.buddy, message)
         # On a MUC we will receive our messages
         if not isinstance(self.buddy, MUC):
-            weechat.prnt_date_tags(
+            wc.prnt_date_tags(
                 self.buffer, 0,
                 "notify_none,no_highlight,nick_%s,prefix_nick_%s,log1" % (
-                    self.server.buddy.alias, weechat.config_string(
-                        weechat.config_get("weechat.color.chat_nick_self"))
-                ), "%s%s\t%s" % (weechat.color("chat_nick_self"),
+                    self.server.buddy.alias, wc.config_string(
+                        wc.config_get("wc.color.chat_nick_self"))
+                ), "%s%s\t%s" % (wc.color("chat_nick_self"),
                                  self.server.buddy.alias, message))
 
     def set_title(self, title):
         self.buffer_title = title
-        weechat.buffer_set(self.buffer, "title", self.buffer_title)
+        wc.buffer_set(self.buffer, "title", self.buffer_title)
 
     def print_status(self, status):
         """ Print a status message in chat. """
-        weechat.prnt(self.buffer,
-                     "%s%s has status %s" % (weechat.prefix("action"),
+        wc.prnt(self.buffer,
+                     "%s%s has status %s" % (wc.prefix("action"),
                                              self.buddy.alias, status))
 
     def close_buffer(self):
         """ Close chat buffer. """
         if self.buffer != "":
-            weechat.buffer_close(self.buffer)
+            wc.buffer_close(self.buffer)
             self.buffer = ""
 
     def delete(self):
@@ -1278,8 +1279,8 @@ class MUC:
 
     def display_buddies(self):
         """ Display buddies. """
-        weechat.prnt(self.chat.buffer, "")
-        weechat.prnt(self.chat.buffer, "Buddies:")
+        wc.prnt(self.chat.buffer, "")
+        wc.prnt(self.chat.buffer, "Buddies:")
 
         len_max = {'alias': 5, 'jid': 5}
         lines = []
@@ -1298,11 +1299,11 @@ class MUC:
                 len_max['jid'] = len(str(buddy.jid))
         prnt_format = "  %s%-" + str(len_max['jid']) + "s %-" + str(
             len_max['alias']) + "s %s"
-        weechat.prnt(self.chat.buffer, prnt_format %
+        wc.prnt(self.chat.buffer, prnt_format %
                      ('', 'JID', 'Alias', 'Status'))
         for line in lines:
-            weechat.prnt(self.chat.buffer,
-                         prnt_format % (weechat.color("chat_nick"), line['jid'],
+            wc.prnt(self.chat.buffer,
+                         prnt_format % (wc.color("chat_nick"), line['jid'],
                                         line['alias'], line['status'],))
 
     def search_buddy_list(self, name, by='jid'):
@@ -1341,23 +1342,23 @@ class MUC:
     def rename_buddy(self, buddy=None, old_nick=None):
         if not buddy:
             return
-        ptr_nick_gui = weechat.nicklist_search_nick(self.chat.buffer, "",
+        ptr_nick_gui = wc.nicklist_search_nick(self.chat.buffer, "",
                                                     old_nick)
         if ptr_nick_gui:
-            weechat.nicklist_remove_nick(self.chat.buffer, ptr_nick_gui)
+            wc.nicklist_remove_nick(self.chat.buffer, ptr_nick_gui)
 
         nick_color = "bar_fg"
-        weechat.nicklist_add_nick(self.chat.buffer, "", buddy.resource,
+        wc.nicklist_add_nick(self.chat.buffer, "", buddy.resource,
                                   nick_color, "", "", 1)
         color = 'message_join'
 
         msg = "%s%s%s%s is now known as %s" % \
-                       (weechat.prefix("action"),
-                        weechat.color("chat_nick"),
+                       (wc.prefix("action"),
+                        wc.color("chat_nick"),
                         old_nick,
-                        weechat.color("msg"),
+                        wc.color("msg"),
                         buddy.resource)
-        weechat.prnt(self.chat.buffer, msg)
+        wc.prnt(self.chat.buffer, msg)
 
     def update_nicklist(self, buddy=None, action=None, role=None):
         """Update buddy in nicklist
@@ -1369,9 +1370,9 @@ class MUC:
             return
         if not action in ['remove', 'update']:
             return
-        ptr_nick_gui = weechat.nicklist_search_nick(self.chat.buffer, "",
+        ptr_nick_gui = wc.nicklist_search_nick(self.chat.buffer, "",
                                                     buddy.resource)
-        weechat.nicklist_remove_nick(self.chat.buffer, ptr_nick_gui)
+        wc.nicklist_remove_nick(self.chat.buffer, ptr_nick_gui)
         msg = ''
         prefix = ''
         color = ''
@@ -1382,7 +1383,7 @@ class MUC:
                 prefix = "⚑ "
                 role_color = "red"
             nick_color = "bar_fg"
-            weechat.nicklist_add_nick(self.chat.buffer, "", buddy.resource,
+            wc.nicklist_add_nick(self.chat.buffer, "", buddy.resource,
                                       nick_color, prefix, role_color, 1)
             if not ptr_nick_gui:
                 msg = 'joined'
@@ -1393,8 +1394,8 @@ class MUC:
             prefix = 'quit'
             color = 'message_quit'
         if msg:
-            weechat.prnt(self.chat.buffer, "%s%s%s%s has %s" %
-                         (weechat.prefix(prefix), weechat.color("chat_nick"),
+            wc.prnt(self.chat.buffer, "%s%s%s%s has %s" %
+                         (wc.prefix(prefix), wc.color("chat_nick"),
                           buddy.resource, jabber_config_color(color), msg))
         return
 
@@ -1444,8 +1445,8 @@ class Buddy:
         if not self.status:
             str_colon = ""
         return "%s(%saway%s%s%s)" % (
-            weechat.color("chat_delimiters"), weechat.color("chat"), str_colon,
-            self.status.replace("\n", " "), weechat.color("chat_delimiters"))
+            wc.color("chat_delimiters"), wc.color("chat"), str_colon,
+            self.status.replace("\n", " "), wc.color("chat_delimiters"))
 
     def parse_jid(self):
         """Parse the jid property.
@@ -1513,7 +1514,7 @@ class Buddy:
 
 def jabber_hook_commands_and_completions():
     """ Hook commands and completions. """
-    weechat.hook_command(
+    wc.hook_command(
         SCRIPT_COMMAND, "Manage Jabber servers",
         "list || add <name> <jid> <password> [<server>[:<port>]]"
         " || connect|disconnect|del [<server>] || alias [add|del <alias> <jid>]"
@@ -1563,32 +1564,32 @@ def jabber_hook_commands_and_completions():
         " || presence online|chat|away|xa|dnd"
         " || buddies"
         " || debug", "jabber_cmd_jabber", "")
-    weechat.hook_command("jchat", "Chat with a Jabber buddy", "<buddy>",
+    wc.hook_command("jchat", "Chat with a Jabber buddy", "<buddy>",
                          "buddy: buddy id", "", "jabber_cmd_jchat", "")
-    weechat.hook_command("jroom", "Manage XMPP rooms", "<room>",
+    wc.hook_command("jroom", "Manage XMPP rooms", "<room>",
                          "room: MUC jid", "", "jabber_cmd_room", "")
-    weechat.hook_command("jmsg", "Send a messge to a buddy",
+    wc.hook_command("jmsg", "Send a messge to a buddy",
                          "[-server <server>] <buddy> <text>",
                          "server: name of jabber server buddy is on\n"
                          " buddy: buddy id\n"
                          "  text: text to send", "", "jabber_cmd_jmsg", "")
-    weechat.hook_command("invite", "Add a buddy to your roster", "<buddy>",
+    wc.hook_command("invite", "Add a buddy to your roster", "<buddy>",
                          "buddy: buddy id", "", "jabber_cmd_invite", "")
-    weechat.hook_command(
+    wc.hook_command(
         "kick", "Remove a buddy from your roster, or deny auth", "<buddy>",
         "buddy: buddy id", "", "jabber_cmd_kick", "")
-    weechat.hook_completion("jabber_servers", "list of jabber servers",
+    wc.hook_completion("jabber_servers", "list of jabber servers",
                             "jabber_completion_servers", "")
-    weechat.hook_completion("jabber_jid_aliases", "list of jabber jid aliases",
+    wc.hook_completion("jabber_jid_aliases", "list of jabber jid aliases",
                             "jabber_completion_jid_aliases", "")
 
 
 def jabber_list_servers_chats(name):
     """ List servers and chats. """
     global jabber_servers
-    weechat.prnt("", "")
+    wc.prnt("", "")
     if len(jabber_servers) > 0:
-        weechat.prnt("", "jabber servers:")
+        wc.prnt("", "jabber servers:")
         for server in jabber_servers:
             if name == "" or server.name.find(name) >= 0:
                 conn_server = ''
@@ -1600,14 +1601,14 @@ def jabber_list_servers_chats(name):
                 if server.sock >= 0:
                     connected = "(connected)"
 
-                weechat.prnt("", "  %s - %s %s %s" %
+                wc.prnt("", "  %s - %s %s %s" %
                              (server.name,
                               eval_expression(server.option_string("jid")),
                               conn_server, connected))
                 for chat in server.chats:
-                    weechat.prnt("", "    chat with %s" % (chat.buddy))
+                    wc.prnt("", "    chat with %s" % (chat.buddy))
     else:
-        weechat.prnt("", "jabber: no server defined")
+        wc.prnt("", "jabber: no server defined")
 
 
 def jabber_cmd_jabber(data, buffer, args):
@@ -1627,25 +1628,25 @@ def jabber_cmd_jabber(data, buffer, args):
             if len(argv) >= 4:
                 server = jabber_search_server_by_name(argv[1])
                 if server:
-                    weechat.prnt("", "jabber: server '%s' already exists" %
+                    wc.prnt("", "jabber: server '%s' already exists" %
                                  argv[1])
                 else:
                     kwargs = {'jid': argv[2], 'password': argv[3]}
                     if len(argv) > 4:
                         conn_server, _, conn_port = argv[4].partition(':')
                         if conn_port and not conn_port.isdigit():
-                            weechat.prnt(
+                            wc.prnt(
                                 "", "jabber: error, invalid port, digits only")
-                            return weechat.WEECHAT_RC_OK
+                            return wc.WEECHAT_RC_OK
                         if conn_server: kwargs['server'] = conn_server
                         if conn_port: kwargs['port'] = conn_port
                     server = Server(argv[1], **kwargs)
                     jabber_servers.append(server)
-                    weechat.prnt("", "jabber: server '%s' created" % argv[1])
+                    wc.prnt("", "jabber: server '%s' created" % argv[1])
             else:
-                weechat.prnt("",
+                wc.prnt("",
                              "jabber: unable to add server, missing arguments")
-                weechat.prnt(
+                wc.prnt(
                     "",
                     "jabber: usage: /jabber add name jid password [server[:port]]")
         elif argv[0] == "alias":
@@ -1656,13 +1657,13 @@ def jabber_cmd_jabber(data, buffer, args):
             if len(argv) >= 2:
                 server = jabber_search_server_by_name(argv[1])
                 if not server:
-                    weechat.prnt("", "jabber: server '%s' not found" % argv[1])
+                    wc.prnt("", "jabber: server '%s' not found" % argv[1])
             else:
                 context = jabber_search_context(buffer)
                 if context["server"]:
                     server = context["server"]
             if server:
-                if weechat.config_boolean(server.options['autoreconnect']):
+                if wc.config_boolean(server.options['autoreconnect']):
                     server.ping()  # This will connect and update ping status
                     server.add_ping_timer()
                 else:
@@ -1672,7 +1673,7 @@ def jabber_cmd_jabber(data, buffer, args):
             if len(argv) >= 2:
                 server = jabber_search_server_by_name(argv[1])
                 if not server:
-                    weechat.prnt("", "jabber: server '%s' not found" % argv[1])
+                    wc.prnt("", "jabber: server '%s' not found" % argv[1])
             else:
                 context = jabber_search_context(buffer)
                 if context["server"]:
@@ -1687,9 +1688,9 @@ def jabber_cmd_jabber(data, buffer, args):
                 if server:
                     server.delete(deleteOptions=True)
                     jabber_servers.remove(server)
-                    weechat.prnt("", "jabber: server '%s' deleted" % argv[1])
+                    wc.prnt("", "jabber: server '%s' deleted" % argv[1])
                 else:
-                    weechat.prnt("", "jabber: server '%s' not found" % argv[1])
+                    wc.prnt("", "jabber: server '%s' not found" % argv[1])
         elif argv[0] == "send":
             if len(argv) >= 3:
                 context = jabber_search_context(buffer)
@@ -1708,19 +1709,19 @@ def jabber_cmd_jabber(data, buffer, args):
             context = jabber_search_context(buffer)
             if context["server"]:
                 if len(argv) == 1:
-                    weechat.prnt("", "jabber: priority = %d" %
+                    wc.prnt("", "jabber: priority = %d" %
                                  int(context["server"].presence.getPriority()))
                 elif len(argv) == 2 and argv[1].isdigit():
                     context["server"].set_presence(priority=int(argv[1]))
                 else:
-                    weechat.prnt(
+                    wc.prnt(
                         "",
                         "jabber: you need to specify priority as positive integer between 0 and 65535")
         elif argv[0] == "status":
             context = jabber_search_context(buffer)
             if context["server"]:
                 if len(argv) == 1:
-                    weechat.prnt("", "jabber: status = %s" %
+                    wc.prnt("", "jabber: status = %s" %
                                  context["server"].presence.getStatus())
                 else:
                     context["server"].set_presence(status=argv1eol)
@@ -1730,9 +1731,9 @@ def jabber_cmd_jabber(data, buffer, args):
                 if len(argv) == 1:
                     show = context["server"].presence.getShow()
                     if show == "": show = "online"
-                    weechat.prnt("", "jabber: presence = %s" % show)
+                    wc.prnt("", "jabber: presence = %s" % show)
                 elif not re.match(r'^(?:online|chat|away|xa|dnd)$', argv[1]):
-                    weechat.prnt(
+                    wc.prnt(
                         "",
                         "jabber: Presence should be one of: online, chat, away, xa, dnd")
                 else:
@@ -1744,15 +1745,15 @@ def jabber_cmd_jabber(data, buffer, args):
             if context["server"]:
                 context["server"].display_buddies()
         elif argv[0] == "debug":
-            weechat.config_option_set(jabber_config_option["debug"], "toggle",
+            wc.config_option_set(jabber_config_option["debug"], "toggle",
                                       1)
             if jabber_debug_enabled():
-                weechat.prnt("", "jabber: debug is now ON")
+                wc.prnt("", "jabber: debug is now ON")
             else:
-                weechat.prnt("", "jabber: debug is now off")
+                wc.prnt("", "jabber: debug is now off")
         else:
-            weechat.prnt("", "jabber: unknown action")
-    return weechat.WEECHAT_RC_OK
+            wc.prnt("", "jabber: unknown action")
+    return wc.WEECHAT_RC_OK
 
 
 def jabber_cmd_jchat(data, buffer, args):
@@ -1765,8 +1766,8 @@ def jabber_cmd_jchat(data, buffer, args):
                 buddy = context["server"].add_buddy(jid=args)
             if not buddy.chat:
                 context["server"].add_chat(buddy)
-            weechat.buffer_set(buddy.chat.buffer, "display", "auto")
-    return weechat.WEECHAT_RC_OK
+            wc.buffer_set(buddy.chat.buffer, "display", "auto")
+    return wc.WEECHAT_RC_OK
 
 
 def jabber_cmd_room(data, buffer, args):
@@ -1786,12 +1787,12 @@ def jabber_cmd_room(data, buffer, args):
                 buddy = context["server"].add_muc(room, nickname)
             if not buddy.chat:
                 context["server"].add_chat(buddy)
-            weechat.buffer_set(buddy.chat.buffer, "display", "auto")
-            weechat.buffer_set(buddy.chat.buffer, "nicklist", "1")
-            weechat.buffer_set(buddy.chat.buffer, "nicklist_display_groups",
+            wc.buffer_set(buddy.chat.buffer, "display", "auto")
+            wc.buffer_set(buddy.chat.buffer, "nicklist", "1")
+            wc.buffer_set(buddy.chat.buffer, "nicklist_display_groups",
                                "1")
-            weechat.buffer_set(buddy.chat.buffer, "display", "auto")
-    return weechat.WEECHAT_RC_OK
+            wc.buffer_set(buddy.chat.buffer, "display", "auto")
+    return wc.WEECHAT_RC_OK
 
 
 def jabber_cmd_jmsg(data, buffer, args):
@@ -1799,7 +1800,7 @@ def jabber_cmd_jmsg(data, buffer, args):
     if args:
         argv = args.split()
         if len(argv) < 2:
-            return weechat.WEECHAT_RC_OK
+            return wc.WEECHAT_RC_OK
         if argv[0] == '-server':
             context = jabber_search_context_by_name(argv[1])
             recipient = argv[2]
@@ -1812,7 +1813,7 @@ def jabber_cmd_jmsg(data, buffer, args):
             buddy = context['server'].search_buddy_list(recipient, by='alias')
             context["server"].send_message(buddy, message)
 
-    return weechat.WEECHAT_RC_OK
+    return wc.WEECHAT_RC_OK
 
 
 def jabber_cmd_invite(data, buffer, args):
@@ -1821,7 +1822,7 @@ def jabber_cmd_invite(data, buffer, args):
         context = jabber_search_context(buffer)
         if context["server"]:
             context["server"].add_buddy(args)
-    return weechat.WEECHAT_RC_OK
+    return wc.WEECHAT_RC_OK
 
 
 def jabber_cmd_kick(data, buffer, args):
@@ -1830,7 +1831,7 @@ def jabber_cmd_kick(data, buffer, args):
         context = jabber_search_context(buffer)
         if context["server"]:
             context["server"].del_buddy(args)
-    return weechat.WEECHAT_RC_OK
+    return wc.WEECHAT_RC_OK
 
 
 def jabber_away_command_run_cb(data, buffer, command):
@@ -1844,7 +1845,7 @@ def jabber_away_command_run_cb(data, buffer, command):
         message = words[2]
     for server in jabber_servers:
         server.set_away(message)
-    return weechat.WEECHAT_RC_OK
+    return wc.WEECHAT_RC_OK
 
 
 class AliasCommand(object):
@@ -1872,41 +1873,41 @@ class AliasCommand(object):
         """Run a "/jabber alias add" command"""
         global jabber_jid_aliases
         if not self.alias or not self.jid:
-            weechat.prnt("", "\njabber: unable to add alias, missing arguments")
-            weechat.prnt("", "jabber: usage: /jabber alias add alias_name jid")
+            wc.prnt("", "\njabber: unable to add alias, missing arguments")
+            wc.prnt("", "jabber: usage: /jabber alias add alias_name jid")
             return
         # Restrict the character set of aliases. The characters must be writable to
         # config file.
         invalid_re = re.compile(r'[^a-zA-Z0-9\[\]\\\^_\-{|}@\.]')
         if invalid_re.search(self.alias):
-            weechat.prnt("", "\njabber: invalid alias: %s" % self.alias)
-            weechat.prnt(
+            wc.prnt("", "\njabber: invalid alias: %s" % self.alias)
+            wc.prnt(
                 "",
                 "jabber: use only characters: a-z A-Z 0-9 [ \ ] ^ _ - { | } @ .")
             return
         # Ensure alias and jid are reasonable length.
         max_len = 64
         if len(self.alias) > max_len:
-            weechat.prnt("", "\njabber: invalid alias: %s" % self.alias)
-            weechat.prnt("", "jabber: must be no more than %s characters long" %
+            wc.prnt("", "\njabber: invalid alias: %s" % self.alias)
+            wc.prnt("", "jabber: must be no more than %s characters long" %
                          max_len)
             return
         if len(self.jid) > max_len:
-            weechat.prnt("", "\njabber: invalid jid: %s" % self.jid)
-            weechat.prnt("", "jabber: must be no more than %s characters long" %
+            wc.prnt("", "\njabber: invalid jid: %s" % self.jid)
+            wc.prnt("", "jabber: must be no more than %s characters long" %
                          max_len)
             return
         jid = self.jid.encode("utf-8")
         alias = self.alias.encode("utf-8")
         if alias in jabber_jid_aliases.keys():
-            weechat.prnt("", "\njabber: unable to add alias: %s" % (alias))
-            weechat.prnt("", "jabber: alias already exists, delete first")
+            wc.prnt("", "\njabber: unable to add alias: %s" % (alias))
+            wc.prnt("", "jabber: alias already exists, delete first")
             return
         if jid in jabber_jid_aliases.values():
-            weechat.prnt("", "\njabber: unable to add alias: %s" % (alias))
+            wc.prnt("", "\njabber: unable to add alias: %s" % (alias))
             for a, j in jabber_jid_aliases.items():
                 if j == jid:
-                    weechat.prnt(
+                    wc.prnt(
                         "",
                         "jabber: jid '%s' is already aliased as '%s', delete first"
                         % (j, a))
@@ -1936,19 +1937,19 @@ class AliasCommand(object):
                 buddy.chat.delete()
                 new_chat = server.add_chat(buddy)
                 if switch_to_buffer:
-                    weechat.buffer_set(new_chat.buffer, "display", "auto")
+                    wc.buffer_set(new_chat.buffer, "display", "auto")
         return
 
     def delete(self):
         """Run a "/jabber alias del" command"""
         global jabber_jid_aliases
         if not self.alias:
-            weechat.prnt("",
+            wc.prnt("",
                          "\njabber: unable to delete alias, missing arguments")
-            weechat.prnt("", "jabber: usage: /jabber alias del alias_name")
+            wc.prnt("", "jabber: usage: /jabber alias del alias_name")
             return
         if not self.alias in jabber_jid_aliases:
-            weechat.prnt("", "\njabber: unable to delete alias '%s', not found"
+            wc.prnt("", "\njabber: unable to delete alias '%s', not found"
                          % (self.alias))
             return
         jid = jabber_jid_aliases[self.alias]
@@ -1959,11 +1960,11 @@ class AliasCommand(object):
     def list(self):
         """Run a "/jabber alias" command to list aliases"""
         global jabber_jid_aliases
-        weechat.prnt("", "")
+        wc.prnt("", "")
         if len(jabber_jid_aliases) <= 0:
-            weechat.prnt("", "jabber: no aliases defined")
+            wc.prnt("", "jabber: no aliases defined")
             return
-        weechat.prnt("", "jabber jid aliases:")
+        wc.prnt("", "jabber jid aliases:")
         len_alias = 5
         len_jid = 5
         for alias, jid in jabber_jid_aliases.items():
@@ -1972,9 +1973,9 @@ class AliasCommand(object):
             if len_jid < len(jid):
                 len_jid = len(jid)
         prnt_format = "  %-" + str(len_alias) + "s %-" + str(len_jid) + "s"
-        weechat.prnt("", prnt_format % ('Alias', 'JID'))
+        wc.prnt("", prnt_format % ('Alias', 'JID'))
         for alias, jid in sorted(jabber_jid_aliases.items()):
-            weechat.prnt("", prnt_format % (alias, jid))
+            wc.prnt("", prnt_format % (alias, jid))
         return
 
     def parse(self):
@@ -2004,18 +2005,18 @@ def jabber_completion_servers(data, completion_item, buffer, completion):
     """ Completion with jabber server names. """
     global jabber_servers
     for server in jabber_servers:
-        weechat.hook_completion_list_add(completion, server.name, 0,
-                                         weechat.WEECHAT_LIST_POS_SORT)
-    return weechat.WEECHAT_RC_OK
+        wc.hook_completion_list_add(completion, server.name, 0,
+                                         wc.WEECHAT_LIST_POS_SORT)
+    return wc.WEECHAT_RC_OK
 
 
 def jabber_completion_jid_aliases(data, completion_item, buffer, completion):
     """ Completion with jabber alias names. """
     global jabber_jid_aliases
     for alias, jid in sorted(jabber_jid_aliases.items()):
-        weechat.hook_completion_list_add(completion, alias, 0,
-                                         weechat.WEECHAT_LIST_POS_SORT)
-    return weechat.WEECHAT_RC_OK
+        wc.hook_completion_list_add(completion, alias, 0,
+                                         wc.WEECHAT_LIST_POS_SORT)
+    return wc.WEECHAT_RC_OK
 
 # ==================================[ fd ]====================================
 
@@ -2026,7 +2027,7 @@ def jabber_fd_cb(data, fd):
     for server in jabber_servers:
         if server.sock == int(fd):
             server.recv()
-    return weechat.WEECHAT_RC_OK
+    return wc.WEECHAT_RC_OK
 
 # ================================[ buffers ]=================================
 
@@ -2041,7 +2042,7 @@ def jabber_buffer_input_cb(data, buffer, input_data):
             context["server"].display_buddies()
         else:
             context["server"].send_message_from_input(input=input_data)
-    return weechat.WEECHAT_RC_OK
+    return wc.WEECHAT_RC_OK
 
 
 def jabber_buffer_close_cb(data, buffer):
@@ -2054,7 +2055,7 @@ def jabber_buffer_close_cb(data, buffer):
         context["server"].chats.remove(context["chat"])
     elif context["server"]:
         context["server"].buffer = ""
-    return weechat.WEECHAT_RC_OK
+    return wc.WEECHAT_RC_OK
 
 # ==================================[ timers ]==================================
 
@@ -2063,36 +2064,14 @@ def jabber_ping_timeout_timer(server_name, remaining_calls):
     server = jabber_search_server_by_name(server_name)
     if server:
         server.ping_time_out()
-    return weechat.WEECHAT_RC_OK
+    return wc.WEECHAT_RC_OK
 
 
 def jabber_ping_timer(server_name, remaining_calls):
     server = jabber_search_server_by_name(server_name)
     if server:
         server.ping()
-    return weechat.WEECHAT_RC_OK
-
-# ==================================[ main ]==================================
-
-if __name__ == "__main__" and import_ok:
-    if weechat.register(SCRIPT_NAME, SCRIPT_AUTHOR, SCRIPT_VERSION,
-                        SCRIPT_LICENSE, SCRIPT_DESC, "jabber_unload_script",
-                        ""):
-
-        version = weechat.info_get("version_number", "") or 0
-        jabber_hook_commands_and_completions()
-        jabber_config_init()
-        jabber_config_read()
-        for server in jabber_servers:
-            if weechat.config_boolean(server.options['autoreconnect']):
-                server.ping()  # This will connect and update ping status
-                server.add_ping_timer()
-            else:
-                if weechat.config_boolean(server.options['autoconnect']):
-                    server.connect()
-
-# ==================================[ end ]===================================
-
+    return wc.WEECHAT_RC_OK
 
 def jabber_unload_script():
     """ Function called when script is unloaded. """
@@ -2101,4 +2080,26 @@ def jabber_unload_script():
     for server in jabber_servers:
         server.disconnect()
         server.delete()
-    return weechat.WEECHAT_RC_OK
+    return wc.WEECHAT_RC_OK
+
+# ==================================[ main ]==================================
+
+def main():
+    if wc.register(SCRIPT_NAME, SCRIPT_AUTHOR, SCRIPT_VERSION,
+                        SCRIPT_LICENSE, SCRIPT_DESC, "jabber_unload_script",
+                        ""):
+
+        jabber_hook_commands_and_completions()
+        jabber_config_init()
+        jabber_config_read()
+        for server in jabber_servers:
+            if wc.config_boolean(server.options['autoreconnect']):
+                server.ping()  # This will connect and update ping status
+                server.add_ping_timer()
+            else:
+                if wc.config_boolean(server.options['autoconnect']):
+                    server.connect()
+
+if __name__ == "__main__":
+    version = wc.info_get("version_number", "") or 0
+    main()
