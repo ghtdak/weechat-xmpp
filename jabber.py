@@ -223,7 +223,7 @@ jabber_server_options = {
     "private": {
         "type": "boolean",
         "desc":
-        "display messages in separate chat buffers instead of a single server buffer",
+            "display messages in separate chat buffers instead of a single server buffer",
         "min": 0,
         "max": 0,
         "string_values": "",
@@ -402,11 +402,11 @@ def ping_timeout_check_cb(server_name, option, value):
     global jabber_config_file, jabber_config_section
     ping_interval_option = wc.config_search_option(
         jabber_config_file, jabber_config_section["server"],
-        "%s.ping_interval" % (server_name))
+        "%s.ping_interval" % server_name)
     ping_interval = wc.config_integer(ping_interval_option)
     if int(ping_interval) and int(value) >= int(ping_interval):
         wc.prnt("", "\njabber: unable to update 'ping_timeout' for server %s" %
-                (server_name))
+                server_name)
         wc.prnt(
             "",
             "jabber: to prevent multiple concurrent pings, ping_interval must be greater than ping_timeout")
@@ -418,12 +418,12 @@ def ping_interval_check_cb(server_name, option, value):
     global jabber_config_file, jabber_config_section
     ping_timeout_option = wc.config_search_option(
         jabber_config_file, jabber_config_section["server"],
-        "%s.ping_timeout" % (server_name))
+        "%s.ping_timeout" % server_name)
     ping_timeout = wc.config_integer(ping_timeout_option)
     if int(value) and int(ping_timeout) >= int(value):
         wc.prnt(
             "", "\njabber: unable to update 'ping_interval' for server %s" %
-            (server_name))
+                server_name)
         wc.prnt(
             "",
             "jabber: to prevent multiple concurrent pings, ping_interval must be greater than ping_timeout")
@@ -513,23 +513,25 @@ class Server:
         server = self.option_string("server")
         port = self.option_integer("port")
         self.client = xmpp.Client(server=self.buddy.domain, debug=[])
-        conn = None
+
+        # unused
+        # conn = None
         server_tuple = None
         if server:
             if port:
                 server_tuple = (server, port)
             else:
-                server_tuple = (server)
+                server_tuple = server
 
         # self.client.connect() may produce a "socket.ssl() is deprecated"
         # warning. Since the code producing the warning is outside this script,
         # catch it and ignore.
-        original_filters = warnings.filters[:]
+        _original_filters = warnings.filters[:]
         warnings.filterwarnings("ignore", category=DeprecationWarning)
         try:
             conn = self.client.connect(server=server_tuple)
         finally:
-            warnings.filters = original_filters
+            warnings.filters = _original_filters
 
         if conn:
             wc.prnt(self.buffer, "jabber: connection ok with %s" % conn)
@@ -557,8 +559,9 @@ class Server:
                               self.buddy.username)
                 wc.buffer_set(self.buffer, "localvar_set_nick",
                               self.buddy.username)
-                hook_away = wc.hook_command_run(
-                    "/away -all*", "jabber_away_command_run_cb", "")
+                # unused
+                # hook_away = wc.hook_command_run(
+                #    "/away -all*", "jabber_away_command_run_cb", "")
 
                 # setting initial presence
                 priority = wc.config_integer(self.options['priority'])
@@ -590,7 +593,7 @@ class Server:
         self.chats.append(chat)
         return chat
 
-    def add_buddy(self, jid):
+    def add_buddy_notused(self, jid):
         """ Add a new buddy """
         self.client.Roster.Authorize(jid)
         self.client.Roster.Subscribe(jid)
@@ -696,6 +699,7 @@ class Server:
             return
         jid = node.getFrom()
         body = node.getBody()
+        resource = None
         if node_type == "groupchat":
             chatname = node.getFrom().getStripped()
             resource = node.getFrom().getResource()
@@ -737,7 +741,7 @@ class Server:
                 autoreconnect_delay = 30
                 wc.command(
                     '', '/wait %s /%s connect %s' %
-                    (autoreconnect_delay, SCRIPT_COMMAND, self.name))
+                        (autoreconnect_delay, SCRIPT_COMMAND, self.name))
 
     def recv_message(self, buddy, message):
         """ Receive a message from buddy. """
@@ -745,7 +749,7 @@ class Server:
             self.buffer, 0, "notify_private,nick_%s,prefix_nick_%s,log1" % (
                 buddy.alias, wc.config_string(wc.config_get(
                     "wc.color.chat_nick_other"))), "%s%s\t%s" % (
-                        wc.color("chat_nick_other"), buddy.alias, message))
+                                wc.color("chat_nick_other"), buddy.alias, message))
 
     def print_status(self, nickname, status):
         """ Print a status in server window and in chat. """
@@ -768,7 +772,10 @@ class Server:
                     "%sjabber: unable to send message, connection is down" %
                     wc.prefix("error"))
             return
-        recipient = buddy
+
+        # todo: unused
+        # recipient = buddy
+
         if isinstance(buddy, Buddy):
             recipient = buddy.jid
             if self.client:
@@ -784,17 +791,17 @@ class Server:
                                             typ="groupchat")
                 self.client.send(msg)
 
-    def send_message_from_input(self, input=''):
+    def send_message_from_input(self, _input=''):
         """ Send a message from input text on server buffer. """
         # Input must be of format "name: message" where name is a jid, bare_jid
         # or alias. The colon can be replaced with a comma as well.
         # Split input into name and message.
-        if not re.compile(r'.+[:,].+').match(input):
+        if not re.compile(r'.+[:,].+').match(_input):
             wc.prnt(self.buffer,
                     "%sjabber: %s" % (wc.prefix("network"),
                                       "Invalid send format. Use  jid: message"))
             return
-        name, message = re.split('[:,]', input, maxsplit=1)
+        name, message = re.split('[:,]', _input, maxsplit=1)
         buddy = self.search_buddy_list(name, by='alias')
         if not buddy:
             wc.prnt(self.buffer,
@@ -813,7 +820,7 @@ class Server:
             "notify_none,no_highlight,nick_%s,prefix_nick_%s,log1" % (
                 sender, wc.config_string(wc.config_get(
                     "wc.color.chat_nick_self"))), "%s%s\t%s" % (
-                        wc.color("chat_nick_self"), sender, message.strip()))
+                wc.color("chat_nick_self"), sender, message.strip()))
 
     def set_away(self, message):
         """ Set/unset away on server.
@@ -834,9 +841,9 @@ class Server:
         self.set_presence(show, status, priority)
 
     def set_presence(self, show=None, status=None, priority=None):
-        if not show is None: self.presence.setShow(show)
-        if not status is None: self.presence.setStatus(status)
-        if not priority is None: self.presence.setPriority(priority)
+        if show is not None: self.presence.setShow(show)
+        if status is not None: self.presence.setStatus(status)
+        if priority is not None: self.presence.setPriority(priority)
         self.client.send(self.presence)
 
     def add_buddy(self, jid=None):
@@ -907,7 +914,7 @@ class Server:
             # into utf-8, else it will raise UnicodeException becaouse of
             # slash character :((
             return (jid_str + '/'
-                   ).encode("utf-8") + jid.resource.encode("utf-8")
+                    ).encode("utf-8") + jid.resource.encode("utf-8")
         return jid_str.encode("utf-8")
 
     def search_buddy_list(self, name, by='jid'):
@@ -1018,7 +1025,6 @@ class Server:
                 return
         iq = xmpp.protocol.Iq(to=self.buddy.domain, typ='get')
         iq.addChild(name="ping", namespace="urn:xmpp:ping")
-        id = self.client.send(iq)
         self.print_debug_handler("ping", iq)
         self.add_ping_timeout_timer()
         return
@@ -1086,16 +1092,16 @@ def jabber_search_server_by_name(name):
     return None
 
 
-def jabber_search_context(buffer):
+def jabber_search_context(_buffer):
     """ Search a server / chat for a buffer. """
     global jabber_servers
     context = {"server": None, "chat": None}
     for server in jabber_servers:
-        if server.buffer == buffer:
+        if server.buffer == _buffer:
             context["server"] = server
             return context
         for chat in server.chats:
-            if chat.buffer == buffer:
+            if chat.buffer == _buffer:
                 context["server"] = server
                 context["chat"] = chat
                 return context
@@ -1145,11 +1151,12 @@ class Chat:
             self.buffer, 0, "notify_private,nick_%s,prefix_nick_%s,log1" % (
                 buddy.alias, wc.config_string(wc.config_get(
                     "wc.color.chat_nick_other"))), "%s%s\t%s" % (
-                        wc.color("chat_nick_other"), buddy.alias, message))
+                                wc.color("chat_nick_other"), buddy.alias, message))
 
     def recv_muc_message(self, buddy, nickname, message):
         """ Receive a message from MUC. """
-        ptr_nick_gui = wc.nicklist_search_nick(self.buffer, "", nickname)
+        # todo: unused
+        # ptr_nick_gui = wc.nicklist_search_nick(self.buffer, "", nickname)
         color = wc.nicklist_nick_get_string(self.buffer, nickname, "color")
         wc.prnt_date_tags(self.buffer, 0, "notify_message",
                           "%s%s\t%s" % (wc.color(color), nickname, message))
@@ -1338,7 +1345,9 @@ class MUC:
         nick_color = "bar_fg"
         wc.nicklist_add_nick(self.chat.buffer, "", buddy.resource, nick_color,
                              "", "", 1)
-        color = 'message_join'
+
+        # todo: unused
+        # color = 'message_join'
 
         msg = "%s%s%s%s is now known as %s" % \
               (wc.prefix("action"),
@@ -1356,7 +1365,7 @@ class MUC:
         """
         if not buddy:
             return
-        if not action in ['remove', 'update']:
+        if action not in ['remove', 'update']:
             return
         ptr_nick_gui = wc.nicklist_search_nick(self.chat.buffer, "",
                                                buddy.resource)
@@ -1540,7 +1549,8 @@ def jabber_hook_commands_and_completions():
         "  Chat with a buddy (pv buffer): /jchat\n"
         "  Add buddy to roster:           /invite\n"
         "  Remove buddy from roster:      /kick\n"
-        "  Send message to buddy:         /jmsg", "list %(jabber_servers)"
+        "  Send message to buddy:         /jmsg",
+        "list %(jabber_servers)"
         " || add %(jabber_servers)"
         " || connect %(jabber_servers)"
         " || disconnect %(jabber_servers)"
@@ -1594,12 +1604,12 @@ def jabber_list_servers_chats(name):
                          eval_expression(server.option_string("jid")),
                          conn_server, connected))
                 for chat in server.chats:
-                    wc.prnt("", "    chat with %s" % (chat.buddy))
+                    wc.prnt("", "    chat with %s" % chat.buddy)
     else:
         wc.prnt("", "jabber: no server defined")
 
 
-def jabber_cmd_jabber(data, buffer, args):
+def jabber_cmd_jabber(data, _buffer, args):
     """ Command '/jabber'. """
     global jabber_servers, jabber_config_option
     if args == "" or args == "list":
@@ -1636,7 +1646,7 @@ def jabber_cmd_jabber(data, buffer, args):
                     "",
                     "jabber: usage: /jabber add name jid password [server[:port]]")
         elif argv[0] == "alias":
-            alias_command = AliasCommand(buffer, argv=argv[1:])
+            alias_command = AliasCommand(_buffer, argv=argv[1:])
             alias_command.run()
         elif argv[0] == "connect":
             server = None
@@ -1645,7 +1655,7 @@ def jabber_cmd_jabber(data, buffer, args):
                 if not server:
                     wc.prnt("", "jabber: server '%s' not found" % argv[1])
             else:
-                context = jabber_search_context(buffer)
+                context = jabber_search_context(_buffer)
                 if context["server"]:
                     server = context["server"]
             if server:
@@ -1661,10 +1671,13 @@ def jabber_cmd_jabber(data, buffer, args):
                 if not server:
                     wc.prnt("", "jabber: server '%s' not found" % argv[1])
             else:
-                context = jabber_search_context(buffer)
+                context = jabber_search_context(_buffer)
                 if context["server"]:
                     server = context["server"]
-            context = jabber_search_context(buffer)
+
+            # todo: unused
+            # context = jabber_search_context(_buffer)
+
             if server:
                 server.delete_ping_timer()
                 server.disconnect()
@@ -1679,7 +1692,7 @@ def jabber_cmd_jabber(data, buffer, args):
                     wc.prnt("", "jabber: server '%s' not found" % argv[1])
         elif argv[0] == "send":
             if len(argv) >= 3:
-                context = jabber_search_context(buffer)
+                context = jabber_search_context(_buffer)
                 if context["server"]:
                     buddy = context['server'].search_buddy_list(argv[1],
                                                                 by='alias')
@@ -1688,11 +1701,11 @@ def jabber_cmd_jabber(data, buffer, args):
         elif argv[0] == "read":
             jabber_config_read()
         elif argv[0] == "away":
-            context = jabber_search_context(buffer)
+            context = jabber_search_context(_buffer)
             if context["server"]:
                 context["server"].set_away(argv1eol)
         elif argv[0] == "priority":
-            context = jabber_search_context(buffer)
+            context = jabber_search_context(_buffer)
             if context["server"]:
                 if len(argv) == 1:
                     wc.prnt("", "jabber: priority = %d" %
@@ -1704,7 +1717,7 @@ def jabber_cmd_jabber(data, buffer, args):
                         "",
                         "jabber: you need to specify priority as positive integer between 0 and 65535")
         elif argv[0] == "status":
-            context = jabber_search_context(buffer)
+            context = jabber_search_context(_buffer)
             if context["server"]:
                 if len(argv) == 1:
                     wc.prnt("", "jabber: status = %s" %
@@ -1712,7 +1725,7 @@ def jabber_cmd_jabber(data, buffer, args):
                 else:
                     context["server"].set_presence(status=argv1eol)
         elif argv[0] == "presence":
-            context = jabber_search_context(buffer)
+            context = jabber_search_context(_buffer)
             if context["server"]:
                 if len(argv) == 1:
                     show = context["server"].presence.getShow()
@@ -1729,7 +1742,7 @@ def jabber_cmd_jabber(data, buffer, args):
                         show = argv[1]
                     context["server"].set_presence(show=show)
         elif argv[0] == "buddies":
-            context = jabber_search_context(buffer)
+            context = jabber_search_context(_buffer)
             if context["server"]:
                 context["server"].display_buddies()
         elif argv[0] == "debug":
@@ -1743,10 +1756,10 @@ def jabber_cmd_jabber(data, buffer, args):
     return wc.WEECHAT_RC_OK
 
 
-def jabber_cmd_jchat(data, buffer, args):
+def jabber_cmd_jchat(data, _buffer, args):
     """ Command '/jchat'. """
     if args:
-        context = jabber_search_context(buffer)
+        context = jabber_search_context(_buffer)
         if context["server"]:
             buddy = context["server"].search_buddy_list(args, by='alias')
             if not buddy:
@@ -1757,7 +1770,7 @@ def jabber_cmd_jchat(data, buffer, args):
     return wc.WEECHAT_RC_OK
 
 
-def jabber_cmd_room(data, buffer, args):
+def jabber_cmd_room(data, _buffer, args):
     """ Command '/jroom'. """
     if args:
         argv = args.split()
@@ -1767,7 +1780,7 @@ def jabber_cmd_room(data, buffer, args):
         else:
             nickname = argv[1]
 
-        context = jabber_search_context(buffer)
+        context = jabber_search_context(_buffer)
         if context["server"]:
             buddy = context["server"].search_buddy_list(args, by='alias')
             if not buddy:
@@ -1781,7 +1794,7 @@ def jabber_cmd_room(data, buffer, args):
     return wc.WEECHAT_RC_OK
 
 
-def jabber_cmd_jmsg(data, buffer, args):
+def jabber_cmd_jmsg(data, _buffer, args):
     """ Command '/jmsg'. """
     if args:
         argv = args.split()
@@ -1792,7 +1805,7 @@ def jabber_cmd_jmsg(data, buffer, args):
             recipient = argv[2]
             message = " ".join(argv[3:])
         else:
-            context = jabber_search_context(buffer)
+            context = jabber_search_context(_buffer)
             recipient = argv[0]
             message = " ".join(argv[1:])
         if context["server"]:
@@ -1802,25 +1815,25 @@ def jabber_cmd_jmsg(data, buffer, args):
     return wc.WEECHAT_RC_OK
 
 
-def jabber_cmd_invite(data, buffer, args):
+def jabber_cmd_invite(data, _buffer, args):
     """ Command '/invite'. """
     if args:
-        context = jabber_search_context(buffer)
+        context = jabber_search_context(_buffer)
         if context["server"]:
             context["server"].add_buddy(args)
     return wc.WEECHAT_RC_OK
 
 
-def jabber_cmd_kick(data, buffer, args):
+def jabber_cmd_kick(data, _buffer, args):
     """ Command '/kick'. """
     if args:
-        context = jabber_search_context(buffer)
+        context = jabber_search_context(_buffer)
         if context["server"]:
             context["server"].del_buddy(args)
     return wc.WEECHAT_RC_OK
 
 
-def jabber_away_command_run_cb(data, buffer, command):
+def jabber_away_command_run_cb(data, _buffer, command):
     """ Callback called when /away -all command is run """
     global jabber_servers
     words = command.split(None, 2)
@@ -1837,7 +1850,7 @@ def jabber_away_command_run_cb(data, buffer, command):
 class AliasCommand(object):
     """Class representing a jabber alias command, ie /jabber alias ..."""
 
-    def __init__(self, buffer, argv=None):
+    def __init__(self, _buffer, argv=None):
         """
         Args:
             bufffer: the weechat buffer the command was run in
@@ -1845,7 +1858,7 @@ class AliasCommand(object):
                   Example, if the command is "/jabber alias add abc abc@server.tld"
                   argv = ['add', 'abc', 'abc@server.tld']
         """
-        self.buffer = buffer
+        self.buffer = _buffer
         self.argv = []
         if argv:
             self.argv = argv
@@ -1886,11 +1899,11 @@ class AliasCommand(object):
         jid = self.jid.encode("utf-8")
         alias = self.alias.encode("utf-8")
         if alias in jabber_jid_aliases.keys():
-            wc.prnt("", "\njabber: unable to add alias: %s" % (alias))
+            wc.prnt("", "\njabber: unable to add alias: %s" % alias)
             wc.prnt("", "jabber: alias already exists, delete first")
             return
         if jid in jabber_jid_aliases.values():
-            wc.prnt("", "\njabber: unable to add alias: %s" % (alias))
+            wc.prnt("", "\njabber: unable to add alias: %s" % alias)
             for a, j in jabber_jid_aliases.items():
                 if j == jid:
                     wc.prnt(
@@ -1933,9 +1946,9 @@ class AliasCommand(object):
             wc.prnt("", "\njabber: unable to delete alias, missing arguments")
             wc.prnt("", "jabber: usage: /jabber alias del alias_name")
             return
-        if not self.alias in jabber_jid_aliases:
+        if self.alias not in jabber_jid_aliases:
             wc.prnt("", "\njabber: unable to delete alias '%s', not found" %
-                    (self.alias))
+                    self.alias)
             return
         jid = jabber_jid_aliases[self.alias]
         del jabber_jid_aliases[self.alias]
@@ -1986,7 +1999,7 @@ class AliasCommand(object):
         return
 
 
-def jabber_completion_servers(data, completion_item, buffer, completion):
+def jabber_completion_servers(data, completion_item, _buffer, completion):
     """ Completion with jabber server names. """
     global jabber_servers
     for server in jabber_servers:
@@ -1995,7 +2008,7 @@ def jabber_completion_servers(data, completion_item, buffer, completion):
     return wc.WEECHAT_RC_OK
 
 
-def jabber_completion_jid_aliases(data, completion_item, buffer, completion):
+def jabber_completion_jid_aliases(data, completion_item, _buffer, completion):
     """ Completion with jabber alias names. """
     global jabber_jid_aliases
     for alias, jid in sorted(jabber_jid_aliases.items()):
@@ -2017,9 +2030,9 @@ def jabber_fd_cb(data, fd):
 # ================================[ buffers ]=================================
 
 
-def jabber_buffer_input_cb(data, buffer, input_data):
+def jabber_buffer_input_cb(data, _buffer, input_data):
     """ Callback called for input data on a jabber buffer. """
-    context = jabber_search_context(buffer)
+    context = jabber_search_context(_buffer)
     if context["server"] and context["chat"]:
         context["chat"].send_message(input_data)
     elif context["server"]:
@@ -2030,9 +2043,9 @@ def jabber_buffer_input_cb(data, buffer, input_data):
     return wc.WEECHAT_RC_OK
 
 
-def jabber_buffer_close_cb(data, buffer):
+def jabber_buffer_close_cb(data, _buffer):
     """ Callback called when a jabber buffer is closed. """
-    context = jabber_search_context(buffer)
+    context = jabber_search_context(_buffer)
     if context["server"] and context["chat"]:
         if context["chat"].buddy:
             context["chat"].buddy.chat = None
