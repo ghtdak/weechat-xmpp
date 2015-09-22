@@ -798,14 +798,16 @@ class Server:
         # Split input into name and message.
         if not re.compile(r'.+[:,].+').match(_input):
             wc.prnt(self.buffer,
-                    "%sjabber: %s" % (wc.prefix("network"),
-                                      "Invalid send format. Use  jid: message"))
+                    "%sjabber: %s" % (
+                        wc.prefix("network"),
+                        "Invalid send format. Use  jid: message"))
             return
         name, message = re.split('[:,]', _input, maxsplit=1)
         buddy = self.search_buddy_list(name, by='alias')
         if not buddy:
             wc.prnt(self.buffer,
-                    "%sjabber: Invalid jid: %s" % (wc.prefix("network"), name))
+                    "%sjabber: Invalid jid: %s" % (
+                        wc.prefix("network"), name))
             return
         # Send activity indicates user is no longer away, set it so
         if self.buddy and self.buddy.away:
@@ -1077,7 +1079,7 @@ class Server:
 
 def eval_expression(option_name):
     """ Return a evaluated expression """
-    if int(version) >= 0x00040200:
+    if int(global_version) >= 0x00040200:
         return wc.string_eval_expression(option_name, {}, {}, {})
     else:
         return option_name
@@ -1136,7 +1138,8 @@ class Chat:
             wc.buffer_set(self.buffer, "short_name", self.buddy.alias)
             wc.buffer_set(self.buffer, "localvar_set_type", "private")
             wc.buffer_set(self.buffer, "localvar_set_server", server.name)
-            wc.buffer_set(self.buffer, "localvar_set_channel", self.buddy.alias)
+            wc.buffer_set(self.buffer, "localvar_set_channel",
+                          self.buddy.alias)
             wc.hook_signal_send("logger_backlog",
                                 wc.WEECHAT_HOOK_SIGNAL_POINTER, self.buffer)
             if switch_to_buffer:
@@ -1151,7 +1154,8 @@ class Chat:
             self.buffer, 0, "notify_private,nick_%s,prefix_nick_%s,log1" % (
                 buddy.alias, wc.config_string(wc.config_get(
                     "wc.color.chat_nick_other"))), "%s%s\t%s" % (
-                                wc.color("chat_nick_other"), buddy.alias, message))
+                                wc.color("chat_nick_other"),
+                                buddy.alias, message))
 
     def recv_muc_message(self, buddy, nickname, message):
         """ Receive a message from MUC. """
@@ -1198,7 +1202,7 @@ class Chat:
         """ Delete chat. """
         self.close_buffer()
 
-# =================================[ buddies ]==================================
+# =================================[ buddies ]===============================
 
 
 class MUC:
@@ -1644,7 +1648,8 @@ def jabber_cmd_jabber(data, _buffer, args):
                 wc.prnt("", "jabber: unable to add server, missing arguments")
                 wc.prnt(
                     "",
-                    "jabber: usage: /jabber add name jid password [server[:port]]")
+                    "jabber: usage: /jabber add name jid "
+                    "password [server[:port]]")
         elif argv[0] == "alias":
             alias_command = AliasCommand(_buffer, argv=argv[1:])
             alias_command.run()
@@ -1715,7 +1720,8 @@ def jabber_cmd_jabber(data, _buffer, args):
                 else:
                     wc.prnt(
                         "",
-                        "jabber: you need to specify priority as positive integer between 0 and 65535")
+                        "jabber: you need to specify priority as positive "
+                        "integer between 0 and 65535")
         elif argv[0] == "status":
             context = jabber_search_context(_buffer)
             if context["server"]:
@@ -1889,12 +1895,14 @@ class AliasCommand(object):
         if len(self.alias) > max_len:
             wc.prnt("", "\njabber: invalid alias: %s" % self.alias)
             wc.prnt("",
-                    "jabber: must be no more than %s characters long" % max_len)
+                    "jabber: must be no more than %s "
+                    "characters long" % max_len)
             return
         if len(self.jid) > max_len:
             wc.prnt("", "\njabber: invalid jid: %s" % self.jid)
             wc.prnt("",
-                    "jabber: must be no more than %s characters long" % max_len)
+                    "jabber: must be no more than %s "
+                    "characters long" % max_len)
             return
         jid = self.jid.encode("utf-8")
         alias = self.alias.encode("utf-8")
@@ -2083,11 +2091,14 @@ def jabber_unload_script():
 
 # ==================================[ main ]==================================
 
+global_version = None
 
 def main():
+    global global_version
     if wc.register(SCRIPT_NAME, SCRIPT_AUTHOR, SCRIPT_VERSION, SCRIPT_LICENSE,
                    SCRIPT_DESC, "jabber_unload_script", ""):
 
+        global_version = wc.info_get("version_number", "") or 0
         jabber_hook_commands_and_completions()
         jabber_config_init()
         jabber_config_read()
@@ -2101,5 +2112,4 @@ def main():
 
 
 if __name__ == "__main__":
-    version = wc.info_get("version_number", "") or 0
     main()
